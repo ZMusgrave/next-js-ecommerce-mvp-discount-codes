@@ -4,20 +4,21 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import db from "@/db/db"
-import { formatCurrency, formatNumber } from "@/lib/formatters"
+} from "@/components/ui/card";
+import db from "@/db/db";
+import { formatCurrency, formatNumber } from "@/lib/formatters";
+import { OrdersByDayChart } from "./_components/charts/OrdersByDayChart";
 
 async function getSalesData() {
   const data = await db.order.aggregate({
     _sum: { pricePaidInCents: true },
     _count: true,
-  })
+  });
 
   return {
     amount: (data._sum.pricePaidInCents || 0) / 100,
     numberOfSales: data._count,
-  }
+  };
 }
 
 async function getUserData() {
@@ -26,7 +27,7 @@ async function getUserData() {
     db.order.aggregate({
       _sum: { pricePaidInCents: true },
     }),
-  ])
+  ]);
 
   return {
     userCount,
@@ -34,16 +35,16 @@ async function getUserData() {
       userCount === 0
         ? 0
         : (orderData._sum.pricePaidInCents || 0) / userCount / 100,
-  }
+  };
 }
 
 async function getProductData() {
   const [activeCount, inactiveCount] = await Promise.all([
     db.product.count({ where: { isAvailableForPurchase: true } }),
     db.product.count({ where: { isAvailableForPurchase: false } }),
-  ])
+  ]);
 
-  return { activeCount, inactiveCount }
+  return { activeCount, inactiveCount };
 }
 
 export default async function AdminDashboard() {
@@ -51,36 +52,54 @@ export default async function AdminDashboard() {
     getSalesData(),
     getUserData(),
     getProductData(),
-  ])
+  ]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <DashboardCard
-        title="Sales"
-        subtitle={`${formatNumber(salesData.numberOfSales)} Orders`}
-        body={formatCurrency(salesData.amount)}
-      />
-      <DashboardCard
-        title="Customers"
-        subtitle={`${formatCurrency(
-          userData.averageValuePerUser
-        )} Average Value`}
-        body={formatNumber(userData.userCount)}
-      />
-      <DashboardCard
-        title="Active Products"
-        subtitle={`${formatNumber(productData.inactiveCount)} Inactive`}
-        body={formatNumber(productData.activeCount)}
-      />
-    </div>
-  )
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <DashboardCard
+          title="Sales"
+          subtitle={`${formatNumber(salesData.numberOfSales)} Orders`}
+          body={formatCurrency(salesData.amount)}
+        />
+        <DashboardCard
+          title="Customers"
+          subtitle={`${formatCurrency(
+            userData.averageValuePerUser
+          )} Average Value`}
+          body={formatNumber(userData.userCount)}
+        />
+        <DashboardCard
+          title="Active Products"
+          subtitle={`${formatNumber(productData.inactiveCount)} Inactive`}
+          body={formatNumber(productData.activeCount)}
+        />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Total Sales</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <OrdersByDayChart
+              data={[
+                { date: "Hi", totalSales: 12 },
+                { date: "Bye", totalSales: 10 },
+                { date: "what", totalSales: 11 },
+              ]}
+            />
+          </CardContent>
+        </Card>
+      </div>
+    </>
+  );
 }
 
 type DashboardCardProps = {
-  title: string
-  subtitle: string
-  body: string
-}
+  title: string;
+  subtitle: string;
+  body: string;
+};
 
 function DashboardCard({ title, subtitle, body }: DashboardCardProps) {
   return (
@@ -93,5 +112,5 @@ function DashboardCard({ title, subtitle, body }: DashboardCardProps) {
         <p>{body}</p>
       </CardContent>
     </Card>
-  )
+  );
 }
